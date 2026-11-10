@@ -78,9 +78,7 @@
 
 ## 1. Objetivos
 
-Al finalizar la clase podrás:
-
-- Explicar qué es una API y qué diferencia a una API REST de un simple endpoint que devuelve JSON.
+- Entender qué es una API REST.
 - Diseñar rutas REST coherentes para un recurso `users`.
 - Implementar un CRUD completo en memoria con `GET`, `POST`, `PATCH` y `DELETE`.
 - Entender qué es un middleware, cómo se encadena y cómo implementar los propios.
@@ -91,14 +89,7 @@ Al finalizar la clase podrás:
 
 **Requisitos:**
 
-- Node.js 26 LTS y npm.
-- Un cliente HTTP: `curl`, Postman, Insomnia o la extensión REST Client de VS Code.
-- Ganas de leer códigos de estado sin miedo. Los `4xx` no son fracasos: son parte del contrato.
-
-```bash
-node --version
-npm --version
-```
+- Un cliente HTTP: `curl`, Postman o Insomnia.
 
 > [!IMPORTANT]
 > Usaremos **ES Modules**. El `package.json` debe contener `"type": "module"`. Todos los ejemplos asumen esa configuración.
@@ -121,14 +112,14 @@ Pensalo como el tablero de un auto: vos usás el volante, los pedales y la palan
 
 En una **API web**, el contrato se expresa sobre HTTP:
 
-| Parte del contrato | Pregunta que responde                     | Ejemplo                                  |
-| ------------------ | ----------------------------------------- | ---------------------------------------- |
-| Recurso            | ¿Sobre qué actúo?                        | `users`                                  |
-| Método             | ¿Qué quiero hacer?                       | `GET`, `POST`, `PATCH`, `DELETE`         |
-| Ruta               | ¿Dónde está el recurso?                  | `/api/users/42`                          |
-| Entrada            | ¿Qué datos envío?                        | body JSON, query params, headers         |
-| Salida             | ¿Qué recibo y en qué formato?            | `200`, `404`, `{ "data": { ... } }`      |
-| Errores            | ¿Cómo se informa un problema?            | `{ "error": { "code": "...", ... } }`    |
+| Parte del contrato | Pregunta que responde         | Ejemplo                               |
+| ------------------ | ----------------------------- | ------------------------------------- |
+| Recurso            | ¿Sobre qué actúo?             | `users`                               |
+| Método             | ¿Qué quiero hacer?            | `GET`, `POST`, `PATCH`, `DELETE`      |
+| Ruta               | ¿Dónde está el recurso?       | `/api/users/42`                       |
+| Entrada            | ¿Qué datos envío?             | body JSON, query params, headers      |
+| Salida             | ¿Qué recibo y en qué formato? | `200`, `404`, `{ "data": { ... } }`   |
+| Errores            | ¿Cómo se informa un problema? | `{ "error": { "code": "...", ... } }` |
 
 El contrato importa más que la implementación. Podés reescribir el servidor entero, cambiar el array por PostgreSQL y el cliente no debería notar la diferencia **si el contrato se respeta**.
 
@@ -139,12 +130,12 @@ El contrato importa más que la implementación. Podés reescribir el servidor e
 
 Los términos se usan como sinónimos, pero no lo son:
 
-| Término       | Alcance                                                                 |
-| ------------- | ----------------------------------------------------------------------- |
-| **API**       | Cualquier interfaz entre componentes de software (una librería también) |
-| **Web API**   | API expuesta sobre HTTP                                                 |
-| **API REST**  | Web API que sigue el estilo arquitectónico REST                         |
-| **API JSON**  | Web API que usa JSON como formato, sin garantizar que sea REST          |
+| Término      | Alcance                                                                 |
+| ------------ | ----------------------------------------------------------------------- |
+| **API**      | Cualquier interfaz entre componentes de software (una librería también) |
+| **Web API**  | API expuesta sobre HTTP                                                 |
+| **API REST** | Web API que sigue el estilo arquitectónico REST                         |
+| **API JSON** | Web API que usa JSON como formato, sin garantizar que sea REST          |
 
 Una API puede devolver JSON y **no** ser REST. REST es un conjunto de restricciones arquitectónicas, no un formato.
 
@@ -192,13 +183,13 @@ JSON (_JavaScript Object Notation_) es un formato de texto. No es un objeto de J
 }
 ```
 
-| Regla de JSON                          | Ejemplo incorrecto                  |
-| -------------------------------------- | ----------------------------------- |
-| Las claves van entre comillas dobles   | `{ name: "Ana" }`                   |
-| Los strings van entre comillas dobles  | `{ "name": 'Ana' }`                 |
-| No hay funciones ni `undefined`        | `{ "fn": () => {} }`                |
-| No hay comentarios                     | `{ "id": 1 /* comentario */ }`      |
-| Los números no llevan comillas         | `{ "id": "1" }` (string, no número) |
+| Regla de JSON                         | Ejemplo incorrecto                  |
+| ------------------------------------- | ----------------------------------- |
+| Las claves van entre comillas dobles  | `{ name: "Ana" }`                   |
+| Los strings van entre comillas dobles | `{ "name": 'Ana' }`                 |
+| No hay funciones ni `undefined`       | `{ "fn": () => {} }`                |
+| No hay comentarios                    | `{ "id": 1 /* comentario */ }`      |
+| Los números no llevan comillas        | `{ "id": "1" }` (string, no número) |
 
 > [!WARNING]
 > `JSON.parse` no perdona. Un body con comillas simples, una coma final o un comentario devuelve `400` del parser de `express.json()` antes de llegar a tu handler. Ese `400` es correcto: el cliente mandó algo que no es JSON.
@@ -207,13 +198,13 @@ JSON (_JavaScript Object Notation_) es un formato de texto. No es un objeto de J
 
 REST no es la única opción. Conocer las alternativas evita creer que "API" es sinónimo de "REST".
 
-| Estilo       | Idea principal                                                | Cuándo se usa                                  |
-| ------------ | ------------------------------------------------------------- | ---------------------------------------------- |
-| **REST**     | Recursos + métodos HTTP + estado de representación            | CRUDs, APIs públicas, la mayoría de los casos  |
-| **GraphQL**  | Un único endpoint; el cliente pide exactamente los campos     | Clientes con necesidades de datos variables    |
-| **RPC**      | Llamadas a procedimientos (`/createUser`, `/getUserById`)     | Acciones, no recursos; sistemas internos       |
-| **gRPC**     | RPC binario sobre HTTP/2 con contratos Protobuf               | Microservicios de alto rendimiento             |
-| **WebSocket**| Canal bidireccional persistente                               | Tiempo real: chats, tableros, notificaciones   |
+| Estilo        | Idea principal                                            | Cuándo se usa                                 |
+| ------------- | --------------------------------------------------------- | --------------------------------------------- |
+| **REST**      | Recursos + métodos HTTP + estado de representación        | CRUDs, APIs públicas, la mayoría de los casos |
+| **GraphQL**   | Un único endpoint; el cliente pide exactamente los campos | Clientes con necesidades de datos variables   |
+| **RPC**       | Llamadas a procedimientos (`/createUser`, `/getUserById`) | Acciones, no recursos; sistemas internos      |
+| **gRPC**      | RPC binario sobre HTTP/2 con contratos Protobuf           | Microservicios de alto rendimiento            |
+| **WebSocket** | Canal bidireccional persistente                           | Tiempo real: chats, tableros, notificaciones  |
 
 Esta clase usa REST porque es el estándar de facto para CRUDs y porque obliga a pensar en recursos, métodos y estados. Ese vocabulario sirve para cualquier estilo.
 
@@ -229,14 +220,14 @@ Esta clase usa REST porque es el estándar de facto para CRUDs y porque obliga a
 
 Las restricciones principales:
 
-| Restricción            | Qué significa                                                             |
-| ---------------------- | ------------------------------------------------------------------------- |
-| **Cliente-servidor**   | El cliente y el servidor evolucionan por separado                          |
-| **Sin estado**         | Cada petición trae todo lo necesario; el servidor no recuerda al cliente  |
-| **Cacheable**          | Las respuestas deben poder cachearse cuando corresponda                   |
-| **Interfaz uniforme**  | Recursos identificables, mensajes autodescriptivos, hipermedia, métodos   |
-| **Sistema en capas**   | Proxies, gateways y balanceadores son invisibles para el cliente          |
-| **Código a demanda**   | (Opcional) El servidor puede enviar código ejecutable al cliente          |
+| Restricción           | Qué significa                                                            |
+| --------------------- | ------------------------------------------------------------------------ |
+| **Cliente-servidor**  | El cliente y el servidor evolucionan por separado                        |
+| **Sin estado**        | Cada petición trae todo lo necesario; el servidor no recuerda al cliente |
+| **Cacheable**         | Las respuestas deben poder cachearse cuando corresponda                  |
+| **Interfaz uniforme** | Recursos identificables, mensajes autodescriptivos, hipermedia, métodos  |
+| **Sistema en capas**  | Proxies, gateways y balanceadores son invisibles para el cliente         |
+| **Código a demanda**  | (Opcional) El servidor puede enviar código ejecutable al cliente         |
 
 > [!IMPORTANT]
 > REST no significa "usar JSON". Implica una **interfaz uniforme**, recursos identificables y mensajes HTTP con semántica correcta. Podés tener una API REST que devuelva XML o HTML.
@@ -264,25 +255,25 @@ Reglas de oro:
 4. **Jerarquía cuando hay pertenencia real.** `/users/42/orders` tiene sentido si los pedidos pertenecen a un usuario.
 5. **Sin extensiones ni mayúsculas.** `users`, no `Users` ni `users.json`.
 
-| Recurso        | URI                              |
-| -------------- | -------------------------------- |
-| Listar usuarios| `GET /api/users`                 |
-| Un usuario     | `GET /api/users/42`              |
-| Pedidos de 42  | `GET /api/users/42/orders`       |
-| Un pedido      | `GET /api/users/42/orders/7`     |
+| Recurso         | URI                          |
+| --------------- | ---------------------------- |
+| Listar usuarios | `GET /api/users`             |
+| Un usuario      | `GET /api/users/42`          |
+| Pedidos de 42   | `GET /api/users/42/orders`   |
+| Un pedido       | `GET /api/users/42/orders/7` |
 
 ### 3.3 Métodos HTTP
 
 El método expresa la **intención**. Cada uno tiene una semántica que el cliente, los proxies y los logs esperan.
 
-| Método   | Uso en el recurso                  | Seguro | Idempotente | Body de respuesta típico |
-| -------- | ---------------------------------- | ------ | ----------- | ------------------------ |
-| `GET`    | Leer uno o varios                  | Sí     | Sí          | Recurso(s)               |
-| `HEAD`   | Igual que `GET`, sin body          | Sí     | Sí          | Ninguno                  |
-| `POST`   | Crear un recurso                   | No     | No          | Recurso creado           |
-| `PUT`    | Reemplazar el recurso completo     | No     | Sí          | Recurso reemplazado      |
-| `PATCH`  | Modificar parcialmente             | No     | No siempre  | Recurso modificado       |
-| `DELETE` | Eliminar el recurso                | No     | Sí          | Ninguno (`204`)          |
+| Método   | Uso en el recurso              | Seguro | Idempotente | Body de respuesta típico |
+| -------- | ------------------------------ | ------ | ----------- | ------------------------ |
+| `GET`    | Leer uno o varios              | Sí     | Sí          | Recurso(s)               |
+| `HEAD`   | Igual que `GET`, sin body      | Sí     | Sí          | Ninguno                  |
+| `POST`   | Crear un recurso               | No     | No          | Recurso creado           |
+| `PUT`    | Reemplazar el recurso completo | No     | Sí          | Recurso reemplazado      |
+| `PATCH`  | Modificar parcialmente         | No     | No siempre  | Recurso modificado       |
+| `DELETE` | Eliminar el recurso            | No     | Sí          | Ninguno (`204`)          |
 
 - **Seguro**: no modifica el estado del servidor.
 - **Idempotente**: repetir la misma petición deja el sistema en el mismo estado final.
@@ -294,24 +285,24 @@ El método expresa la **intención**. Cada uno tiene una semántica que el clien
 
 El estado HTTP es parte del contrato. Un `200` con un body de error confunde a todos.
 
-| Rango | Significado        | Ejemplos habituales                                             |
-| ----- | ------------------ | --------------------------------------------------------------- |
-| `2xx` | Éxito              | `200 OK`, `201 Created`, `204 No Content`                       |
-| `3xx` | Redirección        | `301`, `304 Not Modified`                                       |
-| `4xx` | Error del cliente  | `400 Bad Request`, `404 Not Found`, `409 Conflict`, `422`       |
-| `5xx` | Error del servidor | `500 Internal Server Error`, `503 Service Unavailable`          |
+| Rango | Significado        | Ejemplos habituales                                       |
+| ----- | ------------------ | --------------------------------------------------------- |
+| `2xx` | Éxito              | `200 OK`, `201 Created`, `204 No Content`                 |
+| `3xx` | Redirección        | `301`, `304 Not Modified`                                 |
+| `4xx` | Error del cliente  | `400 Bad Request`, `404 Not Found`, `409 Conflict`, `422` |
+| `5xx` | Error del servidor | `500 Internal Server Error`, `503 Service Unavailable`    |
 
 Los que vas a usar en esta clase:
 
-| Situación                                   | Estado | Por qué                                        |
-| ------------------------------------------- | ------ | ---------------------------------------------- |
-| Listar o buscar con éxito                   | `200`  | Hay un body con datos                          |
-| Crear con éxito                             | `201`  | Se creó un recurso; conviene enviar `Location` |
-| Eliminar con éxito                          | `204`  | No hay body que devolver                       |
-| Body inválido o campos faltantes            | `400`  | El cliente mandó datos que no cumplen el contrato |
-| Recurso inexistente                         | `404`  | La ruta o el ID no existen                     |
-| Conflicto (email duplicado)                 | `409`  | La petición choca con el estado actual         |
-| Error inesperado del servidor               | `500`  | Falló algo que no es culpa del cliente         |
+| Situación                        | Estado | Por qué                                           |
+| -------------------------------- | ------ | ------------------------------------------------- |
+| Listar o buscar con éxito        | `200`  | Hay un body con datos                             |
+| Crear con éxito                  | `201`  | Se creó un recurso; conviene enviar `Location`    |
+| Eliminar con éxito               | `204`  | No hay body que devolver                          |
+| Body inválido o campos faltantes | `400`  | El cliente mandó datos que no cumplen el contrato |
+| Recurso inexistente              | `404`  | La ruta o el ID no existen                        |
+| Conflicto (email duplicado)      | `409`  | La petición choca con el estado actual            |
+| Error inesperado del servidor    | `500`  | Falló algo que no es culpa del cliente            |
 
 > [!WARNING]
 > No uses `200` para todo. Un cliente (o un monitor) decide qué hacer según el estado. Si devolvés `200` cuando el recurso no existe, rompés la semántica y obligás al cliente a leer el body para saber qué pasó.
@@ -320,17 +311,17 @@ Los que vas a usar en esta clase:
 
 Además de sustantivos y métodos, hay convenciones que hacen una API predecible:
 
-| Tema              | Convención                                                        | Ejemplo                                  |
-| ----------------- | ----------------------------------------------------------------- | ---------------------------------------- |
-| **Versionado**    | Prefijo de versión en la ruta o en un header                      | `/api/v1/users`                          |
-| **Filtros**       | Query params, no rutas nuevas                                     | `/api/users?name=ada`                    |
-| **Paginación**    | `limit` y `offset` (o `page` y `pageSize`)                        | `/api/users?limit=10&offset=20`          |
-| **Orden**         | Query param `sort`                                                | `/api/users?sort=-createdAt`             |
-| **Búsqueda**      | Query param `q`                                                   | `/api/users?q=ada`                       |
-| **Formato**       | JSON por defecto; negociación con `Accept`                        | `Accept: application/json`               |
-| **Fechas**        | ISO 8601 en UTC                                                   | `"2026-11-09T14:30:00.000Z"`             |
-| **Nombres**       | `camelCase` en JSON                                               | `firstName`, `createdAt`                 |
-| **IDs**           | Un tipo consistente: número o string, no ambos                    | `42` siempre, no `42` y `"42"`           |
+| Tema           | Convención                                     | Ejemplo                         |
+| -------------- | ---------------------------------------------- | ------------------------------- |
+| **Versionado** | Prefijo de versión en la ruta o en un header   | `/api/v1/users`                 |
+| **Filtros**    | Query params, no rutas nuevas                  | `/api/users?name=ada`           |
+| **Paginación** | `limit` y `offset` (o `page` y `pageSize`)     | `/api/users?limit=10&offset=20` |
+| **Orden**      | Query param `sort`                             | `/api/users?sort=-createdAt`    |
+| **Búsqueda**   | Query param `q`                                | `/api/users?q=ada`              |
+| **Formato**    | JSON por defecto; negociación con `Accept`     | `Accept: application/json`      |
+| **Fechas**     | ISO 8601 en UTC                                | `"2026-11-09T14:30:00.000Z"`    |
+| **Nombres**    | `camelCase` en JSON                            | `firstName`, `createdAt`        |
+| **IDs**        | Un tipo consistente: número o string, no ambos | `42` siempre, no `42` y `"42"`  |
 
 > [!TIP]
 > Una buena API se puede adivinar. Si conocés el recurso `users`, deberías poder intuir que `GET /api/users/42` trae uno y `DELETE /api/users/42` lo borra, sin leer la documentación.
@@ -448,7 +439,12 @@ app.use(express.json());
 let nextId = 3;
 const users = [
   { id: 1, name: "Ana", email: "ana@example.com", password: "ana-secret-123" },
-  { id: 2, name: "Bruno", email: "bruno@example.com", password: "bruno-secret-456" },
+  {
+    id: 2,
+    name: "Bruno",
+    email: "bruno@example.com",
+    password: "bruno-secret-456",
+  },
 ];
 
 // 3. Never expose the password
@@ -551,13 +547,13 @@ npm run dev
 
 ### 4.3 Qué hace cada endpoint
 
-| Método y ruta           | Entrada                     | Salida                                  | Estado |
-| ----------------------- | --------------------------- | --------------------------------------- | ------ |
-| `GET /api/users`        | —                           | `{ data: [ ... ] }`                     | `200`  |
-| `GET /api/users/:id`    | `id` en la ruta             | `{ data: { ... } }` o `{ error }`       | `200` / `404` |
-| `POST /api/users`       | body JSON                   | `{ data: { ... } }` + `Location`        | `201`  |
-| `PATCH /api/users/:id`  | `id` + body JSON parcial    | `{ data: { ... } }` o `{ error }`       | `200` / `404` |
-| `DELETE /api/users/:id` | `id` en la ruta             | sin body                                | `204` / `404` |
+| Método y ruta           | Entrada                  | Salida                            | Estado        |
+| ----------------------- | ------------------------ | --------------------------------- | ------------- |
+| `GET /api/users`        | —                        | `{ data: [ ... ] }`               | `200`         |
+| `GET /api/users/:id`    | `id` en la ruta          | `{ data: { ... } }` o `{ error }` | `200` / `404` |
+| `POST /api/users`       | body JSON                | `{ data: { ... } }` + `Location`  | `201`         |
+| `PATCH /api/users/:id`  | `id` + body JSON parcial | `{ data: { ... } }` o `{ error }` | `200` / `404` |
+| `DELETE /api/users/:id` | `id` en la ruta          | sin body                          | `204` / `404` |
 
 Detalles importantes del código:
 
@@ -644,11 +640,11 @@ const middleware = (req, res, next) => {
 };
 ```
 
-| Argumento | Qué es                                                        |
-| --------- | ------------------------------------------------------------- |
-| `req`     | La petición (`http.IncomingMessage` enriquecida por Express)  |
-| `res`     | La respuesta (`http.ServerResponse` enriquecida por Express)  |
-| `next`    | Función para pasar al siguiente middleware                    |
+| Argumento | Qué es                                                       |
+| --------- | ------------------------------------------------------------ |
+| `req`     | La petición (`http.IncomingMessage` enriquecida por Express) |
+| `res`     | La respuesta (`http.ServerResponse` enriquecida por Express) |
+| `next`    | Función para pasar al siguiente middleware                   |
 
 Un middleware puede:
 
@@ -734,7 +730,9 @@ const requestLogger = (req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - startedAt;
-    console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+    console.log(
+      `${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`,
+    );
   });
 
   next();
@@ -819,16 +817,16 @@ const errorHandler = (error, req, res, next) => {
 
 ### 5.4 Convenciones
 
-| Convención                                             | Por qué                                                        |
-| ------------------------------------------------------ | -------------------------------------------------------------- |
-| Llamar a `next()` o responder, nunca ambos             | Doble respuesta produce `ERR_HTTP_HEADERS_SENT`                |
-| Delegar errores con `next(error)`                      | Centraliza el formato y el logging                             |
-| Un middleware, una responsabilidad                     | Facilita testear y reordenar                                   |
-| No hacer trabajo pesado sincrónico                     | Bloquea el event loop y frena a todos los clientes             |
-| Nombrar por lo que hace: `requestLogger`, `validateBody`| El nombre reemplaza al comentario                             |
-| No usar `app.use` global para lo que es de una ruta    | Un middleware global corre en todo, incluso donde no corresponde |
-| El error handler lleva **cuatro** argumentos           | Con tres, Express lo trata como middleware normal              |
-| Devolver el resultado de `res.status(...).json(...)`   | Evita seguir ejecutando código después de responder            |
+| Convención                                               | Por qué                                                          |
+| -------------------------------------------------------- | ---------------------------------------------------------------- |
+| Llamar a `next()` o responder, nunca ambos               | Doble respuesta produce `ERR_HTTP_HEADERS_SENT`                  |
+| Delegar errores con `next(error)`                        | Centraliza el formato y el logging                               |
+| Un middleware, una responsabilidad                       | Facilita testear y reordenar                                     |
+| No hacer trabajo pesado sincrónico                       | Bloquea el event loop y frena a todos los clientes               |
+| Nombrar por lo que hace: `requestLogger`, `validateBody` | El nombre reemplaza al comentario                                |
+| No usar `app.use` global para lo que es de una ruta      | Un middleware global corre en todo, incluso donde no corresponde |
+| El error handler lleva **cuatro** argumentos             | Con tres, Express lo trata como middleware normal                |
+| Devolver el resultado de `res.status(...).json(...)`     | Evita seguir ejecutando código después de responder              |
 
 > [!WARNING]
 > Un `return res.status(400).json(...)` corta la función, pero **no** la cadena de middlewares por sí solo: como no llamás a `next()`, la cadena se detiene ahí. Eso es lo que querés cuando respondés un error.
@@ -868,15 +866,15 @@ const createUserSchema = yup
   .noUnknown(true);
 ```
 
-| Regla              | Efecto                                                        |
-| ------------------ | ------------------------------------------------------------- |
-| `yup.string()`     | El valor debe ser string                                      |
-| `.trim()`          | Elimina espacios al inicio y al final                         |
-| `.lowercase()`     | Convierte a minúsculas                                        |
-| `.min(2)`          | Longitud mínima                                               |
-| `.email()`         | Valida formato de email                                       |
-| `.required()`      | El campo debe existir y no ser vacío                          |
-| `.noUnknown(true)` | Rechaza claves que no estén declaradas en el esquema          |
+| Regla              | Efecto                                               |
+| ------------------ | ---------------------------------------------------- |
+| `yup.string()`     | El valor debe ser string                             |
+| `.trim()`          | Elimina espacios al inicio y al final                |
+| `.lowercase()`     | Convierte a minúsculas                               |
+| `.min(2)`          | Longitud mínima                                      |
+| `.email()`         | Valida formato de email                              |
+| `.required()`      | El campo debe existir y no ser vacío                 |
+| `.noUnknown(true)` | Rechaza claves que no estén declaradas en el esquema |
 
 `noUnknown(true)` es tu defensa contra **mass assignment**: si el cliente manda `{ "id": 1, "role": "admin" }`, el esquema lo rechaza.
 
@@ -916,10 +914,10 @@ const validateBody = (schema) => async (req, res, next) => {
 
 Opciones de `validate`:
 
-| Opción          | Valor        | Por qué                                                     |
-| --------------- | ------------ | ----------------------------------------------------------- |
-| `abortEarly`    | `false`      | Devuelve **todos** los errores, no solo el primero          |
-| `stripUnknown`  | `false`      | No borra claves desconocidas en silencio                    |
+| Opción         | Valor   | Por qué                                            |
+| -------------- | ------- | -------------------------------------------------- |
+| `abortEarly`   | `false` | Devuelve **todos** los errores, no solo el primero |
+| `stripUnknown` | `false` | No borra claves desconocidas en silencio           |
 
 `req.body` se **reemplaza** por el valor validado y transformado. Eso es intencional: el handler recibe datos normalizados (`trim`, `lowercase`), no lo que mandó el cliente.
 
@@ -929,7 +927,10 @@ Uso en la ruta:
 app.post("/api/users", validateBody(createUserSchema), (req, res) => {
   const user = { id: nextId++, ...req.body };
   users.push(user);
-  res.status(201).location(`/api/users/${user.id}`).json({ data: toPublicUser(user) });
+  res
+    .status(201)
+    .location(`/api/users/${user.id}`)
+    .json({ data: toPublicUser(user) });
 });
 ```
 
@@ -955,28 +956,24 @@ const updateUserSchema = yup
   );
 ```
 
-| Aspecto            | `POST` (crear)             | `PATCH` (actualizar)             |
-| ------------------ | -------------------------- | -------------------------------- |
-| `name`             | Obligatorio                | Opcional                         |
-| `email`            | Obligatorio, único         | Opcional, único si cambia        |
-| `password`         | Obligatorio, mínimo 8      | Opcional, mismo mínimo           |
-| Body vacío         | Inválido                   | Inválido                         |
-| Claves extra       | Rechazadas                 | Rechazadas                       |
+| Aspecto      | `POST` (crear)        | `PATCH` (actualizar)      |
+| ------------ | --------------------- | ------------------------- |
+| `name`       | Obligatorio           | Opcional                  |
+| `email`      | Obligatorio, único    | Opcional, único si cambia |
+| `password`   | Obligatorio, mínimo 8 | Opcional, mismo mínimo    |
+| Body vacío   | Inválido              | Inválido                  |
+| Claves extra | Rechazadas            | Rechazadas                |
 
 Uso:
 
 ```javascript
-app.patch(
-  "/api/users/:id",
-  validateBody(updateUserSchema),
-  (req, res) => {
-    const user = findUser(req.params.id);
-    if (!user) return sendNotFound(res);
+app.patch("/api/users/:id", validateBody(updateUserSchema), (req, res) => {
+  const user = findUser(req.params.id);
+  if (!user) return sendNotFound(res);
 
-    Object.assign(user, req.body); // safe: Yup rejected unknown keys
-    res.json({ data: toPublicUser(user) });
-  },
-);
+  Object.assign(user, req.body); // safe: Yup rejected unknown keys
+  res.json({ data: toPublicUser(user) });
+});
 ```
 
 > [!TIP]
@@ -1090,13 +1087,13 @@ app.use(
 );
 ```
 
-| Opción           | Efecto                                                              |
-| ---------------- | ------------------------------------------------------------------- |
-| `origin`         | Origen(es) permitido(s). String, array o función                    |
-| `methods`        | Métodos permitidos en el preflight                                  |
-| `allowedHeaders` | Headers que el cliente puede enviar                                 |
-| `credentials`    | Permite cookies/credenciales (no compatible con `origin: "*"`)      |
-| `maxAge`         | Segundos que el navegador cachea el preflight                       |
+| Opción           | Efecto                                                         |
+| ---------------- | -------------------------------------------------------------- |
+| `origin`         | Origen(es) permitido(s). String, array o función               |
+| `methods`        | Métodos permitidos en el preflight                             |
+| `allowedHeaders` | Headers que el cliente puede enviar                            |
+| `credentials`    | Permite cookies/credenciales (no compatible con `origin: "*"`) |
+| `maxAge`         | Segundos que el navegador cachea el preflight                  |
 
 Para varios orígenes, una **allowlist** explícita:
 
@@ -1126,14 +1123,14 @@ app.use(cors(corsOptions));
 
 ### 7.4 Qué no hace CORS
 
-| CORS **no**...                                  | Porque...                                                     |
-| ----------------------------------------------- | ------------------------------------------------------------- |
-| Autentica usuarios                              | Es un mecanismo del navegador, no de identidad                |
-| Autoriza acciones                               | Un usuario autenticado puede seguir sin permiso               |
-| Impide que `curl` llame a la API                | `curl` no aplica same-origin policy                           |
-| Protege datos en el servidor                    | Solo controla qué **orígenes del navegador** pueden leer      |
-| Reemplaza HTTPS                                 | Son capas distintas                                           |
-| Reemplaza rate limiting                         | Son controles distintos                                       |
+| CORS **no**...                   | Porque...                                                |
+| -------------------------------- | -------------------------------------------------------- |
+| Autentica usuarios               | Es un mecanismo del navegador, no de identidad           |
+| Autoriza acciones                | Un usuario autenticado puede seguir sin permiso          |
+| Impide que `curl` llame a la API | `curl` no aplica same-origin policy                      |
+| Protege datos en el servidor     | Solo controla qué **orígenes del navegador** pueden leer |
+| Reemplaza HTTPS                  | Son capas distintas                                      |
+| Reemplaza rate limiting          | Son controles distintos                                  |
 
 > [!IMPORTANT]
 > CORS es una **política de lectura del navegador**. La seguridad real se hace con autenticación, autorización, validación, rate limiting y HTTPS. No confundas "el navegador bloqueó la respuesta" con "el servidor está protegido".
@@ -1146,7 +1143,10 @@ Un error handler central evita que cada ruta invente su formato.
 
 ```javascript
 export class AppError extends Error {
-  constructor(message, { status = 500, code = "INTERNAL_ERROR", details } = {}) {
+  constructor(
+    message,
+    { status = 500, code = "INTERNAL_ERROR", details } = {},
+  ) {
     super(message);
     this.name = "AppError";
     this.status = status;
@@ -1233,13 +1233,13 @@ Hasta ahora todo vive en `app.js`. Funciona, pero cuando el proyecto crece apare
 
 Una **clase `Server`** concentra la configuración en un solo lugar y expone una instancia con `start()` y `stop()`. Ganás:
 
-| Antes (`app.js`)                     | Después (`class Server`)                          |
-| ------------------------------------ | ------------------------------------------------- |
-| Estado global                        | Estado de instancia (`#users`)                    |
-| Arranque al importar                 | Arranque explícito con `start()`                  |
-| Difícil de testear                   | Podés crear una instancia sin abrir puerto        |
-| Orden disperso                       | Orden explícito en `#registerMiddlewares()`       |
-| Sin cierre ordenado                  | `stop()` cierra el servidor HTTP                  |
+| Antes (`app.js`)     | Después (`class Server`)                    |
+| -------------------- | ------------------------------------------- |
+| Estado global        | Estado de instancia (`#users`)              |
+| Arranque al importar | Arranque explícito con `start()`            |
+| Difícil de testear   | Podés crear una instancia sin abrir puerto  |
+| Orden disperso       | Orden explícito en `#registerMiddlewares()` |
+| Sin cierre ordenado  | `stop()` cierra el servidor HTTP            |
 
 > [!IMPORTANT]
 > La clase no reemplaza la arquitectura por capas de la próxima clase. Es el paso intermedio: **una sola pieza responsable de configurar Express**. Más adelante, las rutas se moverán a routers y controllers, y `Server` solo las ensamblará.
@@ -1333,8 +1333,18 @@ export class Server {
   #port;
   #httpServer;
   #users = [
-    { id: 1, name: "Ana", email: "ana@example.com", password: "ana-secret-123" },
-    { id: 2, name: "Bruno", email: "bruno@example.com", password: "bruno-secret-456" },
+    {
+      id: 1,
+      name: "Ana",
+      email: "ana@example.com",
+      password: "ana-secret-123",
+    },
+    {
+      id: 2,
+      name: "Bruno",
+      email: "bruno@example.com",
+      password: "bruno-secret-456",
+    },
   ];
   #nextId = 3;
 
@@ -1394,20 +1404,16 @@ export class Server {
       res.json({ data: toPublicUser(user) });
     });
 
-    this.#app.post(
-      "/api/users",
-      validateBody(createUserSchema),
-      (req, res) => {
-        const user = { id: this.#nextId++, ...req.body };
+    this.#app.post("/api/users", validateBody(createUserSchema), (req, res) => {
+      const user = { id: this.#nextId++, ...req.body };
 
-        this.#users.push(user);
+      this.#users.push(user);
 
-        res
-          .status(201)
-          .location(`/api/users/${user.id}`)
-          .json({ data: toPublicUser(user) });
-      },
-    );
+      res
+        .status(201)
+        .location(`/api/users/${user.id}`)
+        .json({ data: toPublicUser(user) });
+    });
 
     this.#app.patch(
       "/api/users/:id",
@@ -1529,18 +1535,18 @@ clase-06-api-rest/
 
 ### 8.4 Qué vive dentro de Server
 
-| Responsabilidad        | Dónde                                         |
-| ---------------------- | --------------------------------------------- |
-| Crear la app Express   | `constructor`                                 |
-| Configurar CORS        | `#registerMiddlewares()`                      |
-| Parsear JSON           | `#registerMiddlewares()`                      |
-| Registrar logger       | `#registerMiddlewares()`                      |
-| Declarar rutas         | `#registerRoutes()`                           |
-| Declarar validaciones  | Esquemas + `validateBody` en el módulo        |
-| Declarar 404 y errores | `#registerErrorHandlers()`                    |
-| Escuchar el puerto     | `start()`                                     |
-| Cerrar el servidor     | `stop()`                                      |
-| Estado en memoria      | Campos privados `#users`, `#nextId`           |
+| Responsabilidad        | Dónde                                  |
+| ---------------------- | -------------------------------------- |
+| Crear la app Express   | `constructor`                          |
+| Configurar CORS        | `#registerMiddlewares()`               |
+| Parsear JSON           | `#registerMiddlewares()`               |
+| Registrar logger       | `#registerMiddlewares()`               |
+| Declarar rutas         | `#registerRoutes()`                    |
+| Declarar validaciones  | Esquemas + `validateBody` en el módulo |
+| Declarar 404 y errores | `#registerErrorHandlers()`             |
+| Escuchar el puerto     | `start()`                              |
+| Cerrar el servidor     | `stop()`                               |
+| Estado en memoria      | Campos privados `#users`, `#nextId`    |
 
 Lo que **no** debería vivir dentro de `Server` a medida que el proyecto crezca:
 
@@ -1682,22 +1688,22 @@ curl -i -X OPTIONS http://localhost:3000/api/users \
 
 ### 9.6 Errores frecuentes
 
-| Síntoma                                             | Causa probable                                                     | Solución                                                     |
-| --------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `req.body` es `undefined`                           | Falta `express.json()` o el `Content-Type` no es JSON              | Registrar el parser y enviar `Content-Type: application/json` |
-| `req.body` es `{}` aunque enviaste datos            | El body no es JSON válido o falta el header                        | Revisar comillas, comas finales y header                     |
-| `Cannot use import statement outside a module`      | Falta `"type": "module"` en `package.json`                         | Agregarlo y reiniciar                                       |
-| `EADDRINUSE: address already in use :::3000`        | Otro proceso usa el puerto                                         | Matar el proceso o usar otro puerto                          |
-| El error handler no se ejecuta                      | Tiene tres argumentos, no cuatro                                   | Declarar `(error, req, res, next)`                           |
-| Todas las rutas responden `404`                     | El 404 se registró antes que las rutas                             | Mover el 404 al final                                        |
-| `ERR_HTTP_HEADERS_SENT`                             | Un handler responde dos veces o llama a `next()` después de responder | Usar `return` al responder y no llamar a `next()`         |
-| CORS falla solo en el navegador                     | Origen no incluido en la allowlist o `credentials` con `"*"`       | Revisar `origin` y `credentials`                             |
-| El navegador manda `OPTIONS` y recibe `404`         | No hay middleware CORS o está después de las rutas                 | Registrar `cors()` antes de las rutas                        |
-| `PATCH` sobrescribe `id` o `role`                   | `Object.assign` sin validación estricta                            | Usar Yup con `noUnknown(true)` y asignar campos conocidos    |
-| La contraseña aparece en la respuesta               | Se devuelve el objeto completo                                     | Usar `toPublicUser` o un DTO de salida                       |
-| Los datos desaparecen al reiniciar                  | Es memoria, no persistencia                                        | Documentarlo; la persistencia llega con PostgreSQL           |
-| `req.params.id` nunca coincide                      | Se compara string con número                                       | Convertir con `Number(...)` o validar el ID                  |
-| El servidor no cierra en tests                      | Falta `server.stop()` o el puerto queda abierto                    | Cerrar en `afterAll` con `await server.stop()`               |
+| Síntoma                                        | Causa probable                                                        | Solución                                                      |
+| ---------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `req.body` es `undefined`                      | Falta `express.json()` o el `Content-Type` no es JSON                 | Registrar el parser y enviar `Content-Type: application/json` |
+| `req.body` es `{}` aunque enviaste datos       | El body no es JSON válido o falta el header                           | Revisar comillas, comas finales y header                      |
+| `Cannot use import statement outside a module` | Falta `"type": "module"` en `package.json`                            | Agregarlo y reiniciar                                         |
+| `EADDRINUSE: address already in use :::3000`   | Otro proceso usa el puerto                                            | Matar el proceso o usar otro puerto                           |
+| El error handler no se ejecuta                 | Tiene tres argumentos, no cuatro                                      | Declarar `(error, req, res, next)`                            |
+| Todas las rutas responden `404`                | El 404 se registró antes que las rutas                                | Mover el 404 al final                                         |
+| `ERR_HTTP_HEADERS_SENT`                        | Un handler responde dos veces o llama a `next()` después de responder | Usar `return` al responder y no llamar a `next()`             |
+| CORS falla solo en el navegador                | Origen no incluido en la allowlist o `credentials` con `"*"`          | Revisar `origin` y `credentials`                              |
+| El navegador manda `OPTIONS` y recibe `404`    | No hay middleware CORS o está después de las rutas                    | Registrar `cors()` antes de las rutas                         |
+| `PATCH` sobrescribe `id` o `role`              | `Object.assign` sin validación estricta                               | Usar Yup con `noUnknown(true)` y asignar campos conocidos     |
+| La contraseña aparece en la respuesta          | Se devuelve el objeto completo                                        | Usar `toPublicUser` o un DTO de salida                        |
+| Los datos desaparecen al reiniciar             | Es memoria, no persistencia                                           | Documentarlo; la persistencia llega con PostgreSQL            |
+| `req.params.id` nunca coincide                 | Se compara string con número                                          | Convertir con `Number(...)` o validar el ID                   |
+| El servidor no cierra en tests                 | Falta `server.stop()` o el puerto queda abierto                       | Cerrar en `afterAll` con `await server.stop()`                |
 
 <sub>[⬆ Volver al índice](#contenido)</sub>
 
